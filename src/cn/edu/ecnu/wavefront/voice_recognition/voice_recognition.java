@@ -39,10 +39,11 @@ public class voice_recognition {
 
     // Demo
     public static void main(String[] args) {
-        voice_recognition vc=new voice_recognition(); //实例化
+        voice_recognition vc = new voice_recognition(); //实例化
         String local_file = vc.getFileDirectory(); //输入音频存放地址
         String resultJSONData = vc.voiceRecognizeOnline(local_file); //上传音频并获得返回结果
-        System.out.println(vc.getResultFromJSON(resultJSONData)); //从JSON读取结果
+        String fixedJSONData = vc.fixJSON(resultJSONData); //修复JSON格式
+        System.out.println(vc.getResultFromJSON(fixedJSONData)); //从JSON读取结果
     }
 
     // 从讯飞获得识别结果
@@ -154,12 +155,24 @@ public class voice_recognition {
         return resultJSONData;
     }
 
+    // JSON格式修复（去除首尾方括号）
+    public String fixJSON(String resultJSONData) {
+        String fixedJSONData = resultJSONData;
+        if (fixedJSONData.startsWith("[")) {
+            fixedJSONData = fixedJSONData.substring(1);
+        }
+        if (fixedJSONData.endsWith("]")) {
+            fixedJSONData = fixedJSONData.substring(0, fixedJSONData.length() - 1);
+        }
+        return fixedJSONData;
+    }
+
     // 从JSON中提取结果
-    public String getResultFromJSON(String resultJSONData) {
+    public String getResultFromJSON(String fixedJSONData) {
         JSONObject resultJSON = null;
         String resultStr = "";
         try {
-            resultJSON = new JSONObject(resultJSONData);
+            resultJSON = new JSONObject(fixedJSONData);
             System.out.println(resultJSON);
             resultStr = resultJSON.getString("onebest");
             System.out.println(resultStr);
