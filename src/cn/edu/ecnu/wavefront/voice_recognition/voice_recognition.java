@@ -21,11 +21,11 @@ public class voice_recognition {
     //private static final String local_file = "...";
 
     // 手动输入存放地址
-    public static String getFileDirectory() {
-        String fileDirectory="";
-        Scanner scanner=new Scanner(System.in);
+    public String getFileDirectory() {
+        String fileDirectory = "";
+        Scanner scanner = new Scanner(System.in);
         System.out.print("File Directory:");
-        fileDirectory=scanner.nextLine();
+        fileDirectory = scanner.nextLine();
         return fileDirectory;
     }
 
@@ -37,8 +37,16 @@ public class voice_recognition {
     // 等待时长（秒）（用于等待服务器返回结果）
     private static int sleepSecond = 20;
 
+    // Demo
     public static void main(String[] args) {
-        String local_file=voice_recognition.getFileDirectory();
+        voice_recognition vc=new voice_recognition(); //实例化
+        String local_file = vc.getFileDirectory(); //输入音频存放地址
+        String resultJSONData = vc.voiceRecognizeOnline(local_file); //上传音频并获得返回结果
+        System.out.println(vc.getResultFromJSON(resultJSONData)); //从JSON读取结果
+    }
+
+    // 从讯飞获得识别结果
+    public String voiceRecognizeOnline(String local_file) {
         // 加载配置文件
         PropertyConfigurator.configure("log4j.properties");
 
@@ -123,10 +131,10 @@ public class voice_recognition {
         }
 
         // 获取任务结果
-        String resultJSONData="";
+        String resultJSONData = "";
         try {
             Message resultMsg = lc.lfasrGetResult(task_id);
-            resultJSONData=resultMsg.getData();
+            resultJSONData = resultMsg.getData();
             // 如果返回状态等于0，则任务处理成功
             if (resultMsg.getOk() == 0) {
                 // 打印转写结果
@@ -143,17 +151,23 @@ public class voice_recognition {
             System.out.println("failed=" + resultMsg.getFailed());
         }
 
-        // 从JSON中提取结果
-        JSONObject resultJSON=null;
-        String resultStr="";
+        return resultJSONData;
+    }
+
+    // 从JSON中提取结果
+    public String getResultFromJSON(String resultJSONData) {
+        JSONObject resultJSON = null;
+        String resultStr = "";
         try {
-            resultJSON=new JSONObject(resultJSONData);
+            resultJSON = new JSONObject(resultJSONData);
             System.out.println(resultJSON);
-            resultStr=resultJSON.getString("onebest");
+            resultStr = resultJSON.getString("onebest");
             System.out.println(resultStr);
         } catch (JSONException e) {
             // 获取异常结果
             System.out.println(e.getMessage());
         }
+
+        return resultStr;
     }
 }
