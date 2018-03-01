@@ -12,6 +12,9 @@ import com.iflytek.msp.cpdb.lfasr.model.LfasrType;
 import com.iflytek.msp.cpdb.lfasr.model.Message;
 import com.iflytek.msp.cpdb.lfasr.model.ProgressStatus;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class voice_recognition {
 
     // 原始音频存放地址
@@ -120,9 +123,10 @@ public class voice_recognition {
         }
 
         // 获取任务结果
+        String resultJSONData="";
         try {
             Message resultMsg = lc.lfasrGetResult(task_id);
-            System.out.println(resultMsg.getData());
+            resultJSONData=resultMsg.getData();
             // 如果返回状态等于0，则任务处理成功
             if (resultMsg.getOk() == 0) {
                 // 打印转写结果
@@ -137,6 +141,19 @@ public class voice_recognition {
             Message resultMsg = JSON.parseObject(e.getMessage(), Message.class);
             System.out.println("ecode=" + resultMsg.getErr_no());
             System.out.println("failed=" + resultMsg.getFailed());
+        }
+
+        // 从JSON中提取结果
+        JSONObject resultJSON=null;
+        String resultStr="";
+        try {
+            resultJSON=new JSONObject(resultJSONData);
+            System.out.println(resultJSON);
+            resultStr=resultJSON.getString("onebest");
+            System.out.println(resultStr);
+        } catch (JSONException e) {
+            // 获取异常结果
+            System.out.println(e.getMessage());
         }
     }
 }
