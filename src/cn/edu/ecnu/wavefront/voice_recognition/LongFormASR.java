@@ -1,7 +1,6 @@
 package cn.edu.ecnu.wavefront.voice_recognition;
 
 import java.util.HashMap;
-import java.util.Scanner;
 
 import org.apache.log4j.PropertyConfigurator;
 
@@ -12,22 +11,10 @@ import com.iflytek.msp.cpdb.lfasr.model.LfasrType;
 import com.iflytek.msp.cpdb.lfasr.model.Message;
 import com.iflytek.msp.cpdb.lfasr.model.ProgressStatus;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-public class voice_recognition {
+public class LongFormASR {
 
     // 原始音频存放地址
     //private static final String local_file = "...";
-
-    // 手动输入存放地址
-    public String getFileDirectory() {
-        String fileDirectory = "";
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("File Directory:");
-        fileDirectory = scanner.nextLine();
-        return fileDirectory;
-    }
 
     /*
      * 转写类型选择：标准版和电话版分别为：
@@ -37,17 +24,14 @@ public class voice_recognition {
     // 等待时长（秒）（用于等待服务器返回结果）
     private static int sleepSecond = 20;
 
-    // Demo
+    /*
     public static void main(String[] args) {
-        voice_recognition vc = new voice_recognition(); //实例化
-        String local_file = vc.getFileDirectory(); //输入音频存放地址
-        String resultJSONData = vc.voiceRecognizeOnline(local_file); //上传音频并获得返回结果
-        String fixedJSONData = vc.fixJSON(resultJSONData); //修复JSON格式
-        System.out.println(vc.getResultFromJSON(fixedJSONData)); //从JSON读取结果
+
     }
+    */
 
     // 从讯飞获得识别结果
-    public String voiceRecognizeOnline(String local_file) {
+    public String audioUpload(String local_file) {
         // 加载配置文件
         PropertyConfigurator.configure("log4j.properties");
 
@@ -86,6 +70,22 @@ public class voice_recognition {
             Message uploadMsg = JSON.parseObject(e.getMessage(), Message.class);
             System.out.println("ecode=" + uploadMsg.getErr_no());
             System.out.println("failed=" + uploadMsg.getFailed());
+        }
+
+        return task_id;
+    }
+
+    public Boolean requestResultLoop(String task_id) {
+
+        // 初始化LFASR实例
+        LfasrClientImp lc = null;
+        try {
+            lc = LfasrClientImp.initLfasrClient();
+        } catch (LfasrException e) {
+            // 初始化异常，解析异常描述信息
+            Message initMsg = JSON.parseObject(e.getMessage(), Message.class);
+            System.out.println("ecode=" + initMsg.getErr_no());
+            System.out.println("failed=" + initMsg.getFailed());
         }
 
         // 循环等待音频处理结果
@@ -131,6 +131,72 @@ public class voice_recognition {
             }
         }
 
+        return true;
+    }
+
+    public Boolean requestResult(String task_id) {
+        // 初始化LFASR实例
+        LfasrClientImp lc = null;
+        try {
+            lc = LfasrClientImp.initLfasrClient();
+        } catch (LfasrException e) {
+            // 初始化异常，解析异常描述信息
+            Message initMsg = JSON.parseObject(e.getMessage(), Message.class);
+            System.out.println("ecode=" + initMsg.getErr_no());
+            System.out.println("failed=" + initMsg.getFailed());
+        }
+
+        Boolean isFinished = false;
+        try {
+            // 获取处理进度
+            Message progressMsg = lc.lfasrGetProgress(task_id);
+
+            // 如果返回状态不等于0，则任务失败
+            if (progressMsg.getOk() != 0) {
+                System.out.println("task was fail. task_id:" + task_id);
+                System.out.println("ecode=" + progressMsg.getErr_no());
+                System.out.println("failed=" + progressMsg.getFailed());
+
+                // 服务端处理异常-服务端内部有重试机制（不排查极端无法恢复的任务）
+                // 客户端可根据实际情况选择：
+                // 1. 客户端循环重试获取进度
+                // 2. 退出程序，反馈问题
+                System.exit(1);
+            } else {
+                ProgressStatus progressStatus = JSON.parseObject(progressMsg.getData(), ProgressStatus.class);
+                if (progressStatus.getStatus() == 9) {
+                    // 处理完成
+                    System.out.println("task was completed. task_id:" + task_id);
+                    isFinished = true;
+                } else {
+                    // 未处理完成
+                    System.out.println("task was incomplete. task_id:" + task_id + ", status:" + progressStatus.getDesc());
+                }
+            }
+        } catch (LfasrException e) {
+            // 获取进度异常处理，根据返回信息排查问题后，再次进行获取
+            Message progressMsg = JSON.parseObject(e.getMessage(), Message.class);
+            System.out.println("ecode=" + progressMsg.getErr_no());
+            System.out.println("failed=" + progressMsg.getFailed());
+        }
+
+        return isFinished;
+    }
+
+
+    public String getJSONResult(String task_id) {
+
+        // 初始化LFASR实例
+        LfasrClientImp lc = null;
+        try {
+            lc = LfasrClientImp.initLfasrClient();
+        } catch (LfasrException e) {
+            // 初始化异常，解析异常描述信息
+            Message initMsg = JSON.parseObject(e.getMessage(), Message.class);
+            System.out.println("ecode=" + initMsg.getErr_no());
+            System.out.println("failed=" + initMsg.getFailed());
+        }
+
         // 获取任务结果
         String resultJSONData = "";
         try {
@@ -155,32 +221,4 @@ public class voice_recognition {
         return resultJSONData;
     }
 
-    // JSON格式修复（去除首尾方括号）
-    public String fixJSON(String resultJSONData) {
-        String fixedJSONData = resultJSONData;
-        if (fixedJSONData.startsWith("[")) {
-            fixedJSONData = fixedJSONData.substring(1);
-        }
-        if (fixedJSONData.endsWith("]")) {
-            fixedJSONData = fixedJSONData.substring(0, fixedJSONData.length() - 1);
-        }
-        return fixedJSONData;
-    }
-
-    // 从JSON中提取结果
-    public String getResultFromJSON(String fixedJSONData) {
-        JSONObject resultJSON = null;
-        String resultStr = "";
-        try {
-            resultJSON = new JSONObject(fixedJSONData);
-            System.out.println(resultJSON);
-            resultStr = resultJSON.getString("onebest");
-            System.out.println(resultStr);
-        } catch (JSONException e) {
-            // 获取异常结果
-            System.out.println(e.getMessage());
-        }
-
-        return resultStr;
-    }
 }
