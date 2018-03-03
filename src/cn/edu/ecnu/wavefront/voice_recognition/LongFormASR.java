@@ -21,8 +21,6 @@ public class LongFormASR {
      * LfasrType.LFASR_STANDARD_RECORDED_AUDIO 和 LfasrType.LFASR_TELEPHONY_RECORDED_AUDIO
      * */
     private static final LfasrType type = LfasrType.LFASR_STANDARD_RECORDED_AUDIO;
-    // 等待时长（秒）（用于等待服务器返回结果）
-    private static int sleepSecond = 20;
 
     /*
     public static void main(String[] args) {
@@ -30,12 +28,8 @@ public class LongFormASR {
     }
     */
 
-    // 从讯飞获得识别结果
-    public String audioUpload(String local_file) {
-        // 加载配置文件
-        PropertyConfigurator.configure("log4j.properties");
-
-        // 初始化LFASR实例
+    // 初始化LFASR实例
+    private static LfasrClientImp initLC() {
         LfasrClientImp lc = null;
         try {
             lc = LfasrClientImp.initLfasrClient();
@@ -45,6 +39,17 @@ public class LongFormASR {
             System.out.println("ecode=" + initMsg.getErr_no());
             System.out.println("failed=" + initMsg.getFailed());
         }
+        return lc;
+    }
+
+    // 从讯飞获得识别ID
+    public String audioUpload(String local_file) {
+
+        // 加载配置文件
+        PropertyConfigurator.configure("log4j.properties");
+
+        // 初始化LFASR实例
+        LfasrClientImp lc = initLC();
 
         // 获取上传任务ID
         String task_id = "";
@@ -75,18 +80,14 @@ public class LongFormASR {
         return task_id;
     }
 
+    // 循环等待音频处理结果
     public Boolean requestResultLoop(String task_id) {
 
         // 初始化LFASR实例
-        LfasrClientImp lc = null;
-        try {
-            lc = LfasrClientImp.initLfasrClient();
-        } catch (LfasrException e) {
-            // 初始化异常，解析异常描述信息
-            Message initMsg = JSON.parseObject(e.getMessage(), Message.class);
-            System.out.println("ecode=" + initMsg.getErr_no());
-            System.out.println("failed=" + initMsg.getFailed());
-        }
+        LfasrClientImp lc = initLC();
+
+        // 等待时长（秒）（用于等待服务器返回结果）
+        int sleepSecond = 20;
 
         // 循环等待音频处理结果
         while (true) {
@@ -134,17 +135,11 @@ public class LongFormASR {
         return true;
     }
 
+    // 单次返回音频处理结果
     public Boolean requestResult(String task_id) {
+
         // 初始化LFASR实例
-        LfasrClientImp lc = null;
-        try {
-            lc = LfasrClientImp.initLfasrClient();
-        } catch (LfasrException e) {
-            // 初始化异常，解析异常描述信息
-            Message initMsg = JSON.parseObject(e.getMessage(), Message.class);
-            System.out.println("ecode=" + initMsg.getErr_no());
-            System.out.println("failed=" + initMsg.getFailed());
-        }
+        LfasrClientImp lc = initLC();
 
         Boolean isFinished = false;
         try {
@@ -183,19 +178,11 @@ public class LongFormASR {
         return isFinished;
     }
 
-
+    // 获取任务结果（JSON格式）
     public String getJSONResult(String task_id) {
 
         // 初始化LFASR实例
-        LfasrClientImp lc = null;
-        try {
-            lc = LfasrClientImp.initLfasrClient();
-        } catch (LfasrException e) {
-            // 初始化异常，解析异常描述信息
-            Message initMsg = JSON.parseObject(e.getMessage(), Message.class);
-            System.out.println("ecode=" + initMsg.getErr_no());
-            System.out.println("failed=" + initMsg.getFailed());
-        }
+        LfasrClientImp lc = initLC();
 
         // 获取任务结果
         String resultJSONData = "";
