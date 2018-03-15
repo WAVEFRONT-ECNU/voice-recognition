@@ -5,8 +5,8 @@ import java.util.Scanner;
 public class Demo {
 
     // 手动输入存放地址
-    public static String getFileDirectory() {
-        String fileDirectory = "";
+    private static String getFileDirectory() {
+        String fileDirectory;
         Scanner scanner = new Scanner(System.in);
         System.out.print("File Directory:");
         fileDirectory = scanner.nextLine();
@@ -22,7 +22,7 @@ public class Demo {
 
         // 等待识别完成
         Boolean isFinished = false;
-        while (isFinished != true) {
+        while (!isFinished) {
             isFinished = lfa.requestResultLoop(taskID);
         }
 

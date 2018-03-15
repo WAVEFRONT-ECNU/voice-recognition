@@ -10,5 +10,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="lfasr-sdk-client-2.0.0.1005-jar-with-dependencies" level="project" />
+    <orderEntry type="library" name="json-20180130" level="project" />
   </component>
 </module>
